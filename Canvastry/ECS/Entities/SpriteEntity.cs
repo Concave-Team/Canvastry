@@ -9,12 +9,18 @@ using System.Threading.Tasks;
 
 namespace Canvastry.ECS.Entities
 {
+    [Serializable]
     public class SpriteEntity : Entity, IDrawableEntity
     {
-        public SpriteEntity() : base()
+        public SpriteEntity(bool createCmp = false) : base()
         {
-            this.AddComponent<TransformComponent>(new TransformComponent());
-            this.AddComponent<SpriteComponent>(new SpriteComponent());
+            if (createCmp)
+            {
+                this.AddComponent<TransformComponent>(new TransformComponent());
+                var transform = this.GetComponent<TransformComponent>();
+                this.AddComponent<SpriteComponent>(new SpriteComponent());
+                this.AddComponent<BoxColliderComponent>(new BoxColliderComponent(transform.Position, transform.Size));
+            }
         }
 
         public override void Init()
@@ -43,13 +49,6 @@ namespace Canvastry.ECS.Entities
                         transformComp.Rotation,
                         spriteComp.Tint
                     );
-            }
-
-            if(HasComponent<BoxColliderComponent>())
-            {
-                var bc = GetComponent<BoxColliderComponent>();
-
-                Raylib.DrawRectangleLines((int)bc.Position.X, (int)bc.Position.Y, (int)bc.Size.X, (int)bc.Size.Y, Color.Yellow);
             }
         }
 

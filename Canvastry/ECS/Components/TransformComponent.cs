@@ -9,6 +9,7 @@ using MoonSharp.Interpreter;
 namespace Canvastry.ECS.Components
 {
     [MoonSharpUserData]
+    [Serializable]
     public class TransformComponent : Component
     {
         public Vector2 Position = new Vector2(0,0);

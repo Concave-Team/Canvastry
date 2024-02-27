@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Canvastry.ECS.Components;
 using Canvastry.ECS.Entities;
-using Canvastry.Input;
+using Canvastry.InputLib;
 using MoonSharp.Interpreter;
 using Raylib_cs;
 
@@ -27,16 +27,16 @@ namespace Canvastry.Scripting
             UserData.RegisterType<SpriteComponent>();
             UserData.RegisterType<BoxColliderComponent>();
             UserData.RegisterType<BoxCollision>();
-            UserData.RegisterType<Input.MouseButton>();
+            UserData.RegisterType<InputLib.MouseButton>();
 
-            var inKey = UserData.CreateStatic<InputKey>();
-            var msButton = UserData.CreateStatic<Input.MouseButton>();
+            var inKey = UserData.CreateStatic<InputLib.InputKey>();
+            var msButton = UserData.CreateStatic<InputLib.MouseButton>();
             var colors = UserData.CreateStatic<Color>();
 
             Script script = new Script(CoreModules.Preset_SoftSandbox);
 
             script.Globals.RegisterConstants();
-            script.Globals["Input"] = typeof(Input.Input);
+            script.Globals["Input"] = typeof(InputLib.Input);
             script.Globals["Scene"] = typeof(ECS.Scene);
             script.Globals["MaterialComponent"] = typeof(MaterialComponent);
             script.Globals["TransformComponent"] = typeof(TransformComponent);

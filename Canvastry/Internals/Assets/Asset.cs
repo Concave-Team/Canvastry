@@ -55,7 +55,7 @@ namespace Canvastry.Internals.Assets
         TEXT,
         /// <summary>
         /// Defines a scene asset type:
-        /// File extension: *.cvs
+        /// File extension: *.scene
         /// </summary>
         SCENE,
         /// <summary>

@@ -6,10 +6,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace Canvastry.ECS
 {
     [MoonSharpUserData]
+    [Serializable]
     public class Entity
     {
         public ulong id { get; internal set; } // Effectively allows for up to 18,446,744,073,709,551,615 entities, which I think is enough(probably).
@@ -17,6 +19,7 @@ namespace Canvastry.ECS
         public string Name;
         public string Tag;
         public Entity Parent;
+        [JsonIgnore]
         public Scene scene;
         public List<Component> Components = new List<Component>();
 

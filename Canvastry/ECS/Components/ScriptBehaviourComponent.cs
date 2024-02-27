@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace Canvastry.ECS.Components
 {
+    [Serializable]
     public class ScriptBehaviourComponent : Component
     {
         public Asset ScriptData;

@@ -81,6 +81,20 @@ namespace Canvastry.Internals.Assets
                 case AssetType.CODE:
                     sAsset = new Asset(assetName, type, assetPath, new CodeAssetRef(File.ReadAllText(assetPath)));
                     break;
+                case AssetType.AUTO:
+                    var ext = Path.GetExtension(assetPath);
+
+                    switch(ext)
+                    {
+                        case ".txt":
+                            sAsset = CreateAssetByType(assetPath, AssetType.TEXT); 
+                            break;
+                        case ".png":
+                            sAsset = CreateAssetByType(assetPath, AssetType.TEXTURE);
+                            break;
+                    }
+
+                    break;
             }
             return sAsset;
         }

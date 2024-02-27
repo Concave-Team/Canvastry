@@ -1,4 +1,5 @@
-﻿using Canvastry.Internals.Events;
+﻿using Canvastry.ECS.Entities;
+using Canvastry.Internals.Events;
 using MoonSharp.Interpreter;
 using System;
 using System.Collections.Generic;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using EventHandler = Canvastry.Internals.Events.EventHandler;
 
 namespace Canvastry.ECS
@@ -39,12 +41,15 @@ namespace Canvastry.ECS
     public class EntityCreatedEvent : Event { }
 
     [MoonSharpUserData]
+    [Serializable]
     public class Scene
     {
         #region OBJECT_MEMBERS
         public List<Entity> SceneEntities { get; set; } = new List<Entity>();
+        [JsonIgnore]
         public List<Entity> DeleteFlagList { get; set; } = new List<Entity>();
-        public string SceneName { get; set; }
+        public string SceneName { get; set; } = "Untitled";
+        public CameraEntity SceneCamera { get; set; }
 
         /// <summary>
         /// Creates an entity and adds it to the scene. Invokes the EntityCreatedEvent.
@@ -55,7 +60,7 @@ namespace Canvastry.ECS
         /// <returns></returns>
         public Entity CreateEntity<T>(Entity parent, string name = "Untitled") where T : Entity
         {
-            Entity createdEntt = (T)Activator.CreateInstance(typeof(T))!;
+            Entity createdEntt = (T)Activator.CreateInstance(typeof(T), args: true)!;
 
             createdEntt.scene = this;
             createdEntt.id = (ulong)SceneEntities.Count + 1;
@@ -86,16 +91,34 @@ namespace Canvastry.ECS
 
         public void SaveToFile(string path)
         {
-            // do this later.
+            path = Path.GetFullPath(path);
+
+            var settings = new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.Auto,
+            };
+            var jsonScene = JsonConvert.SerializeObject(this, settings);
+
+            File.WriteAllText(path, jsonScene);
         }
         #endregion
 
         #region STATIC_MEMBERS
+        [JsonIgnore]
         public static Scene LoadedScene;
 
         public static Scene LoadSceneFromFile(string path)
         {
-            Scene scene = new Scene();
+            var settings = new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.Auto,
+            };
+            Scene? scene = JsonConvert.DeserializeObject<Scene>(File.ReadAllText(path),settings);
+
+            foreach(var e in scene.SceneEntities)
+                e.scene = scene;
+
+            LoadedScene = scene;
 
             return scene;
         }

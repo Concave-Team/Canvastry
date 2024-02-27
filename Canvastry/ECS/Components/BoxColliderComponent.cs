@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace Canvastry.ECS.Components
 {
+    [Serializable]
     public class BoxColliderComponent : Component
     {
         public Vector2 Position { get; set; }

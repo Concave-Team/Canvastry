@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 namespace Canvastry.ECS.Entities
 {
     [MoonSharpUserData]
+    [Serializable]
     public partial class RectangleEntity : Entity, IDrawableEntity
     {
         public void Draw()
@@ -31,10 +32,20 @@ namespace Canvastry.ECS.Entities
             base.Update();
         }
 
+        public RectangleEntity(bool createCmp = false)
+        {
+            if (createCmp)
+            {
+                this.AddComponent<TransformComponent>(new TransformComponent());
+                var transform = this.GetComponent<TransformComponent>();
+                this.AddComponent<MaterialComponent>(new MaterialComponent());
+                this.AddComponent<BoxColliderComponent>(new BoxColliderComponent(transform.Position, transform.Size));
+            }
+        }
+
         public RectangleEntity() : base()
         {
-            this.AddComponent<TransformComponent>(new TransformComponent());
-            this.AddComponent<MaterialComponent>(new MaterialComponent());
+
         }
     }
 }

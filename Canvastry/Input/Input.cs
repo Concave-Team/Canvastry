@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using MoonSharp.Interpreter;
 using Raylib_cs;
 
-namespace Canvastry.Input
+namespace Canvastry.InputLib
 {
     [MoonSharpUserData]
     public static class Input

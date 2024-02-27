@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 namespace Canvastry.ECS.Components
 {
     [MoonSharpUserData]
+    [Serializable]
     public class MaterialComponent : Component
     {
         public Color MaterialColor = Color.White;

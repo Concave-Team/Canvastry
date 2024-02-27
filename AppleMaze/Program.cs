@@ -23,9 +23,12 @@ namespace AppleMaze
 
             var rectangleEntity = scene.CreateEntity<SpriteEntity>(null, "My Entity");
             var rectangleEntity2 = scene.CreateEntity<SpriteEntity>(null, "My Entity #2");
+            var cameraEntity = scene.CreateEntity<CameraEntity>(null, "Main Camera");
 
             Asset luaFile = AssetManager.LoadAsset("resources/movement.lua", AssetType.CODE);
             rectangleEntity.AddComponent<ScriptBehaviourComponent>(new ScriptBehaviourComponent(luaFile));
+
+            scene.SceneCamera = (CameraEntity)cameraEntity;
 
             Scene.LoadScene(scene);
 
@@ -40,9 +43,6 @@ namespace AppleMaze
             rectangleEntity2.GetComponent<TransformComponent>().Position = new System.Numerics.Vector2(gameApp.Settings.WindowWidth / 2, gameApp.Settings.WindowHeight / 2 - 350);
             rectangleEntity2.AddComponent<BoxColliderComponent>(new BoxColliderComponent(rectangleEntity2.GetComponent<TransformComponent>().Position, rectangleEntity2.GetComponent<TransformComponent>().Size));
 
-            
-
-            
 
             gameApp.Run();
         }
