@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Canvastry.Scripting;
+using Canvastry.Internals.Assets;
 
 namespace Canvastry.ECS
 {
@@ -28,12 +30,14 @@ namespace Canvastry.ECS
             if (this.HasComponent<ScriptBehaviourComponent>())
             {
                 var scriptComp = this.GetComponent<ScriptBehaviourComponent>();
+                if (scriptComp._Script != null)
+                {
+                    var script = scriptComp._Script;
 
-                var script = scriptComp._Script;
+                    script.Globals["GameObject"] = this;
 
-                script.Globals["GameObject"] = this;
-
-                script.Call(script.Globals["Update"], Raylib_cs.Raylib.GetFrameTime());
+                    script.Call(script.Globals["Update"], Raylib_cs.Raylib.GetFrameTime());
+                }
             }    
         }
 
@@ -45,44 +49,47 @@ namespace Canvastry.ECS
                 var boxColliderComp = this.GetComponent<BoxColliderComponent>();
 
                 boxColliderComp.Position = this.GetComponent<TransformComponent>().Position - this.GetComponent<TransformComponent>().Size / 2 + boxColliderComp.Offset;
+                boxColliderComp.Size = this.GetComponent<TransformComponent>().Size;
             }
             if (this.HasComponent<ScriptBehaviourComponent>())
             {
                 var scriptComp = this.GetComponent<ScriptBehaviourComponent>();
-
-                var script = scriptComp._Script;
-
-                script.Globals["GameObject"] = this;
-
-                if (script.Globals["PhysicsUpdate"] != null)
-                    script.Call(script.Globals["PhysicsUpdate"]);
-
-                if (this.HasComponent<BoxColliderComponent>())
+                if (scriptComp._Script != null)
                 {
-                    foreach(var entity in scene.SceneEntities)
+                    var script = scriptComp._Script;
+
+                    script.Globals["GameObject"] = this;
+
+                    if (script.Globals["PhysicsUpdate"] != null)
+                        script.Call(script.Globals["PhysicsUpdate"]);
+
+                    if (this.HasComponent<BoxColliderComponent>())
                     {
-                        if (entity.id != this.id)
+                        foreach (var entity in scene.SceneEntities)
                         {
-                            if (entity.HasComponent<BoxColliderComponent>())
+                            if (entity.id != this.id)
                             {
-                                var colliderA = this.GetComponent<BoxColliderComponent>();
-                                var colliderB = entity.GetComponent<BoxColliderComponent>();
-
-                                if (Raylib.CheckCollisionRecs(new Rectangle(colliderA.Position, colliderA.Size), new Rectangle(colliderB.Position, colliderB.Size)))
+                                if (entity.HasComponent<BoxColliderComponent>())
                                 {
-                                    colliderA.IsColliding = true;
+                                    var colliderA = this.GetComponent<BoxColliderComponent>();
+                                    var colliderB = entity.GetComponent<BoxColliderComponent>();
 
-                                    Raylib.DrawRectangleRec(Raylib.GetCollisionRec(new Rectangle(colliderA.Position, colliderA.Size), new Rectangle(colliderB.Position, colliderB.Size)), Color.Red);
-
-                                    script.Call(script.Globals["OnCollisionEnter"], new BoxCollision(entity, colliderB, Raylib.GetCollisionRec(new Rectangle(colliderA.Position, colliderA.Size), new Rectangle(colliderB.Position, colliderB.Size))));
-                                }
-                                else
-                                {
-                                    if (colliderA.IsColliding == true)
+                                    if (Raylib.CheckCollisionRecs(new Rectangle(colliderA.Position, colliderA.Size), new Rectangle(colliderB.Position, colliderB.Size)))
                                     {
-                                        colliderA.IsColliding = false;
+                                        colliderA.IsColliding = true;
 
-                                        script.Call(script.Globals["OnCollisionExited"]);
+                                        Raylib.DrawRectangleRec(Raylib.GetCollisionRec(new Rectangle(colliderA.Position, colliderA.Size), new Rectangle(colliderB.Position, colliderB.Size)), Color.Red);
+
+                                        script.Call(script.Globals["OnCollisionEnter"], new BoxCollision(entity, colliderB, Raylib.GetCollisionRec(new Rectangle(colliderA.Position, colliderA.Size), new Rectangle(colliderB.Position, colliderB.Size))));
+                                    }
+                                    else
+                                    {
+                                        if (colliderA.IsColliding == true)
+                                        {
+                                            colliderA.IsColliding = false;
+
+                                            script.Call(script.Globals["OnCollisionExited"]);
+                                        }
                                     }
                                 }
                             }
@@ -97,12 +104,24 @@ namespace Canvastry.ECS
             if (this.HasComponent<ScriptBehaviourComponent>())
             {
                 var scriptComp = this.GetComponent<ScriptBehaviourComponent>();
+                if (scriptComp._Script != null)
+                {
+                    var script = scriptComp._Script;
 
-                var script = scriptComp._Script;
+                    script.Globals["GameObject"] = this;
 
-                script.Globals["GameObject"] = this;
+                    script.Call(script.Globals["Start"]);
+                }
+                else
+                {
+                    Console.WriteLine("HEYYY");
+                    scriptComp._Script = CVLuaExecutor.CreateScript(((CodeAssetRef)scriptComp.ScriptData.Data).Code);
+                    var script = scriptComp._Script;
 
-                script.Call(script.Globals["Start"]);
+                    script.Globals["GameObject"] = this;
+
+                    script.Call(script.Globals["Start"]);
+                }
             }
         }
 

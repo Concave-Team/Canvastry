@@ -123,6 +123,20 @@ namespace Canvastry.ECS
             return scene;
         }
 
+        public static Scene CreateSceneFromFile(string path)
+        {
+            var settings = new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.Auto,
+            };
+            Scene? scene = JsonConvert.DeserializeObject<Scene>(File.ReadAllText(path), settings);
+
+            foreach (var e in scene.SceneEntities)
+                e.scene = scene;
+
+            return scene;
+        }
+
         public static void LoadScene(Scene scene)
         {
             LoadedScene = scene;

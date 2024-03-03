@@ -13,10 +13,11 @@ namespace Canvastry.ECS.Components
     public class ScriptBehaviourComponent : Component
     {
         public Asset ScriptData;
-        internal Script _Script;
+        public Script _Script;
 
         public ScriptBehaviourComponent(Asset scriptData)
         {
+            Console.WriteLine("this is working");
             if (scriptData.Type == AssetType.CODE)
             {
                 ScriptData = scriptData;

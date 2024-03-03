@@ -8,16 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Canvastry\Canvastry.csproj" />
+    <PackageReference Include="Newtonsoft.JSON" Version="13.0.3" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="resources\movement.lua">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="resources\player-front.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <ProjectReference Include="..\Canvastry\Canvastry.csproj" />
   </ItemGroup>
 
 </Project>

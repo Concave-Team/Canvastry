@@ -2,6 +2,7 @@
 using Canvastry.ECS.Components;
 using Canvastry.Internals.Assets;
 using Canvastry.Internals.Events;
+using Canvastry.Scripting;
 using ImGuiNET;
 using MoonSharp.Interpreter;
 using Raylib_cs;
@@ -33,6 +34,7 @@ namespace Canvastry.Internals.App
 
         public void Run()
         {
+            Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint);
             Raylib.InitWindow(Settings.WindowWidth, Settings.WindowHeight, Settings.WindowTitle);
             Raylib.SetTargetFPS(Settings.TargetFPS);
 
@@ -57,12 +59,27 @@ namespace Canvastry.Internals.App
 
             PhysicsTimer.Start();
 
-            rlImGui.Setup(true, true);
+            if (!StandaloneRun)
+                rlImGui.Setup(true, true);
 
             EventHandler.Invoke<RaylibInitializedEvent>(new EventData(this));
 
+            if (StandaloneRun)
+                foreach (var e in Scene.LoadedScene.SceneEntities)
+                {
+                    if (e.HasComponent<ScriptBehaviourComponent>())
+                    {
+                        var sCmp = e.GetComponent<ScriptBehaviourComponent>();
+
+                        sCmp._Script = CVLuaExecutor.CreateScript(((CodeAssetRef)sCmp.ScriptData.Data).Code);
+                        e.Init();
+                    }
+                }
+
             while (IsRunning && !Raylib.WindowShouldClose())
             {
+                if (StandaloneRun)
+                    Rendertexture.CurrentRTx = null;
                 try
                 {
                     AssetManager.LazyLoadAssets();
@@ -90,11 +107,14 @@ namespace Canvastry.Internals.App
                         if (StandaloneRun)
                         {
                             var camera = Scene.LoadedScene.SceneCamera.GetComponent<CameraComponent>();
-                            RenderCamera = camera.Camera;
+                            var cameraT = Scene.LoadedScene.SceneCamera.GetComponent<TransformComponent>();
+
+                            RenderCamera = new Camera2D(cameraT.Position, new System.Numerics.Vector2(0, 0), cameraT.Rotation, camera.Zoom);
                         }
 
                         Raylib.BeginMode2D(RenderCamera);
-                        Raylib.BeginTextureMode(Rendertexture.CurrentRTx.rTexture);
+                        if (!StandaloneRun)
+                            Raylib.BeginTextureMode(Rendertexture.CurrentRTx.rTexture);
 
                         // GRAPHICS:
                         foreach (Entity e in Scene.LoadedScene.SceneEntities)
@@ -108,20 +128,24 @@ namespace Canvastry.Internals.App
                         if (RenderFunction != null)
                             RenderFunction();
 
-                        if (Rendertexture.CurrentRTx != null)
-                            Raylib.EndTextureMode();
+                        if (!StandaloneRun)
+                            if (Rendertexture.CurrentRTx != null)
+                                Raylib.EndTextureMode();
                         Raylib.EndMode2D();
                     }
 
-                    // Render ImGui
-                    rlImGui.Begin();
-
-                    if (ImGuiRenderFunction != null)
+                    if (!StandaloneRun)
                     {
-                        ImGuiRenderFunction();
-                    }
+                        // Render ImGui
+                        rlImGui.Begin();
 
-                    rlImGui.End();
+                        if (ImGuiRenderFunction != null)
+                        {
+                            ImGuiRenderFunction();
+                        }
+
+                        rlImGui.End();
+                    }
 
                     Raylib.EndDrawing();
 
@@ -135,15 +159,14 @@ namespace Canvastry.Internals.App
                     Console.WriteLine(ex.DecoratedMessage);
                 }
             }
-
-            Shutdown();
         }
 
         public void Shutdown()
         {
             IsRunning = false;
             PhysicsTimer.Stop();
-            rlImGui.Shutdown();
+            if (!StandaloneRun)
+                rlImGui.Shutdown();
             Raylib.CloseWindow();
         }
 

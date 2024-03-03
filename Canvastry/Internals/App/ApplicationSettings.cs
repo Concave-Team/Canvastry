@@ -35,7 +35,7 @@ namespace Canvastry.Internals.App
         /// <summary>
         /// The color the window is cleared.
         /// </summary>
-        public Color WindowClearColor { get; set; } = Color.RayWhite;
+        public Color WindowClearColor { get; set; } = Color.Blue;
 
         public ApplicationSettings() 
         {

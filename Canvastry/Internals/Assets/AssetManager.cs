@@ -92,6 +92,9 @@ namespace Canvastry.Internals.Assets
                         case ".png":
                             sAsset = CreateAssetByType(assetPath, AssetType.TEXTURE);
                             break;
+                        case ".lua":
+                            sAsset = CreateAssetByType(assetPath, AssetType.CODE);
+                            break;
                     }
 
                     break;
