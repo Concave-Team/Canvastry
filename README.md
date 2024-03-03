@@ -1,6 +1,6 @@
 # Canvastry
 
-[![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/tterb/atomic-design-ui/blob/master/LICENSEs)
+[![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/Concave-Team/Canvastry/blob/main/LICENSE)
 [![Open Source](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://opensource.org/)
 
 Canvastry is an open-source general-purpose 2D game engine. It is written in C# and uses Raylib for graphics, and ImGui.NET(+rlImGui) for the editor GUI.
