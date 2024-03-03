@@ -1,4 +1,6 @@
 ﻿using Canvastry.ECS;
+using CSCore.SoundOut;
+using CSCore;
 using Raylib_cs;
 using System;
 using System.Collections.Generic;
@@ -6,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Canvastry.Internals.Assets
 {
@@ -70,6 +73,7 @@ namespace Canvastry.Internals.Assets
         public AssetType Type { get; set; }
         public string Path { get; set; }
 
+        [JsonIgnore]
         public AssetRef Data { get; set; }
 
         public Asset(string name, AssetType type, string path)
@@ -134,11 +138,15 @@ namespace Canvastry.Internals.Assets
 
     public class AudioAssetRef : AssetRef
     {
-        public Sound Sound { get; set; }
+        [JsonIgnore]
+        public IWaveSource waveSource;
+        [JsonIgnore]
+        public ISoundOut soundOut;
 
-        public AudioAssetRef(Sound sound)
+        public AudioAssetRef(IWaveSource waveSource, ISoundOut soundOut)
         {
-            Sound = sound;
+            this.waveSource = waveSource;
+            this.soundOut = soundOut;
         }
     }
 

@@ -1,13 +1,18 @@
 ﻿using Canvastry.ECS;
 using Canvastry.Internals.Events;
 using Raylib_cs;
+using CSCore;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Threading.Tasks;
 using EventHandler = Canvastry.Internals.Events.EventHandler;
+using CSCore.Codecs;
+using CSCore.Streams;
+using CSCore.SoundOut;
 
 namespace Canvastry.Internals.Assets
 {
@@ -73,7 +78,14 @@ namespace Canvastry.Internals.Assets
                         lazyAssets.Add(lAs);
                         return lAs;
                     }
-                    sAsset = new Asset(assetName, type, assetPath, new AudioAssetRef(Raylib.LoadSound(assetPath)));
+                    //sAsset = new Asset(assetName, type, assetPath, new AudioAssetRef(Bass.CreateStream(assetPath)));
+                    var audioFile = CodecFactory.Instance.GetCodec(assetPath)
+                        .ToSampleSource()
+                        .ToWaveSource();
+                    var soundOut = new WasapiOut { Latency = 10, Device = SharedData.CurrentAudioDevice };
+                    soundOut.Initialize(audioFile);
+
+                    sAsset = new Asset(assetName, type, assetPath, new AudioAssetRef(audioFile, soundOut));
                     break;
                 case AssetType.TEXT:
                     sAsset = new Asset(assetName, type, assetPath, new TextAssetRef(File.ReadAllText(assetPath)));
@@ -84,16 +96,28 @@ namespace Canvastry.Internals.Assets
                 case AssetType.AUTO:
                     var ext = Path.GetExtension(assetPath);
 
-                    switch(ext)
+                    switch (ext)
                     {
                         case ".txt":
-                            sAsset = CreateAssetByType(assetPath, AssetType.TEXT); 
+                            sAsset = CreateAssetByType(assetPath, AssetType.TEXT);
                             break;
                         case ".png":
                             sAsset = CreateAssetByType(assetPath, AssetType.TEXTURE);
                             break;
                         case ".lua":
                             sAsset = CreateAssetByType(assetPath, AssetType.CODE);
+                            break;
+                        case ".mp3":
+                            sAsset = CreateAssetByType(assetPath, AssetType.AUDIO);
+                            break;
+                        case ".wav":
+                            sAsset = CreateAssetByType(assetPath, AssetType.AUDIO);
+                            break;
+                        case ".ogg":
+                            sAsset = CreateAssetByType(assetPath, AssetType.AUDIO);
+                            break;
+                        case ".flac":
+                            sAsset = CreateAssetByType(assetPath, AssetType.AUDIO);
                             break;
                     }
 
@@ -112,7 +136,7 @@ namespace Canvastry.Internals.Assets
                 var lAsset = lazyAssets[i];
                 var asset = LoadAsset(lAsset.FilePath, lAsset.Type);
                 lAsset.asset = asset;
-                
+
                 lazyAssets.RemoveAt(i);
             }
         }
@@ -136,6 +160,17 @@ namespace Canvastry.Internals.Assets
         {
             if (LoadedAssets.ContainsKey(assetPath))
             {
+                if (LoadedAssets[assetPath].Type == AssetType.TEXTURE)
+                {
+                    var tex = LoadedAssets[assetPath].Data as TextureAssetRef;
+                    Raylib.UnloadTexture(tex.Texture);
+                }
+                else if (LoadedAssets[assetPath].Type == AssetType.AUDIO)
+                {
+                    var tex = LoadedAssets[assetPath].Data as AudioAssetRef;
+
+                }
+
                 LoadedAssets.Remove(assetPath);
                 LoadedAssetCount--;
 

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Canvastry.ECS.Components
@@ -12,20 +13,24 @@ namespace Canvastry.ECS.Components
     [Serializable]
     public class ScriptBehaviourComponent : Component
     {
-        public Asset ScriptData;
+        [JsonIgnore]
+        internal Asset ScriptData;
+        public string ScriptPath;
         public Script _Script;
 
-        public ScriptBehaviourComponent(Asset scriptData)
+        public ScriptBehaviourComponent(string ScriptPath)
         {
-            Console.WriteLine("this is working");
-            if (scriptData.Type == AssetType.CODE)
-            {
-                ScriptData = scriptData;
-
-                _Script = CVLuaExecutor.CreateScript(((CodeAssetRef)ScriptData.Data).Code);
-            }
+            this.ScriptPath = ScriptPath;
+            ScriptData = AssetManager.GetLoadedAsset(ScriptPath);
+            if (ScriptData != null)
+                if (ScriptData.Type == AssetType.CODE)
+                {
+                    _Script = CVLuaExecutor.CreateScript(((CodeAssetRef)ScriptData.Data).Code);
+                }
         }
 
-        public ScriptBehaviourComponent() { }
+        public ScriptBehaviourComponent()
+        {
+        }
     }
 }

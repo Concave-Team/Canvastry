@@ -17,6 +17,10 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Canvastry.InputLib;
 using EventHandler = Canvastry.Internals.Events.EventHandler;
+using CSCore.XAudio2;
+using System.Collections.Immutable;
+using MoonSharp.Interpreter;
+using System.Diagnostics;
 
 namespace Canvastry.Editor
 {
@@ -40,6 +44,7 @@ namespace Canvastry.Editor
 
         public string pEntityName = "";
 
+        float vol = 0.5f;
         public ImGuiStyle _propStyle;
         public Vector4 matCompColor = new Vector4(0, 0, 0, 255);
 
@@ -87,6 +92,11 @@ namespace Canvastry.Editor
         public bool ComponentAdditionWindow = false;
         public bool RunningLive = false;
         public Type tyComponentSelection;
+
+        public Asset SelAssetBrowser;
+        public string SelAssetText;
+
+        public bool ShowAssetTextViewer = false;
 
         void DisplayEntityTree(Entity entity)
         {
@@ -170,7 +180,21 @@ namespace Canvastry.Editor
                 }
                 #endregion
                 ImGui.PushFont(Fonts["MontserratSB14p"]);
-
+                #region Asset Text Viewer
+                if (ShowAssetTextViewer)
+                    if (ImGui.Begin("Asset Text Viewer"))
+                    {
+                        ImGui.PushFont(ImGui.GetIO().FontDefault);
+                        ImGui.PopFont();
+                        ImGui.PushFont(Fonts["MontserratSB16p"]);
+                        ImGui.Separator();
+                        ImGui.InputTextMultiline("", ref SelAssetText, 12000, new Vector2(ImGui.GetWindowSize().X-14, 350), ImGuiInputTextFlags.ReadOnly);
+                        ImGui.Separator();
+                        if (ImGui.Button("Exit"))
+                            ShowAssetTextViewer = false;
+                        ImGui.End();
+                    }
+                #endregion
                 #region Editor Loaded Window
                 ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(15, 15));
                 if (EditorJustOpened)
@@ -225,6 +249,9 @@ namespace Canvastry.Editor
                             var s = Directory.GetFiles(sel).First(e => Path.GetExtension(e) == ".json");
 
                             var pF = ProjectFile.FromFile(s);
+
+                            if (!File.Exists(pF.PrimaryScene) || pF.PrimaryScene == null)
+                                pF.PrimaryScene = "";
 
                             ProjectFile.LoadedProject = pF;
 
@@ -366,7 +393,6 @@ namespace Canvastry.Editor
                     ImGui.EndMainMenuBar();
                 }
                 #endregion
-                
                 #region Scene Explorer Window
                 if (ImGui.Begin("Explorer"))
                 {
@@ -546,20 +572,81 @@ namespace Canvastry.Editor
                                 ImGui.SeparatorText("ScriptBehaviourComponent");
                                 ImGui.TextWrapped("Script: ");
                                 ImGui.SameLine();
-                                if (scriptC.ScriptData != null)
+                                if (scriptC.ScriptPath != null)
                                 {
-                                    var thing = Path.GetFileName(scriptC.ScriptData.Path);
+                                    var thing = Path.GetFileName(scriptC.ScriptPath);
                                     ImGui.PushID(7);
                                     ImGui.InputText("", ref thing, 5000, ImGuiInputTextFlags.ReadOnly);
                                     ImGui.PopID();
                                     ImGui.SameLine();
                                 }
-                                if (ImGui.Button("Select"))
+
+                                ImGui.PushFont(ImGui.GetIO().FontDefault);
+                                if (ImGui.Button(IconFonts.FontAwesome6.Upload, new Vector2(24, ImGui.GetItemRectSize().Y)))
                                 {
-                                    RunOnAssetSelected = () => { if(AssetSelected.Type == AssetType.CODE) scriptC.ScriptData = AssetSelected; };
+                                    RunOnAssetSelected = () => { if (AssetSelected.Type == AssetType.CODE) scriptC.ScriptPath = AssetSelected.Path; };
                                     AssetSelFilter = ".lua";
                                     AssetSelectionWindow = true;
                                 }
+                                ImGui.PopFont();
+                                ImGui.PushFont(Fonts["MontserratSB16p"]);
+                            }
+
+                            else if (component is AudioSourceComponent)
+                            {
+                                var audio = (AudioSourceComponent)component;
+
+                                ImGui.SeparatorText("AudioSourceComponent");
+                                ImGui.TextWrapped("Audio: ");
+                                ImGui.SameLine();
+                                if (audio.AudioPath != null)
+                                {
+                                    var thing = Path.GetFileName(audio.AudioPath);
+                                    ImGui.PushID(7);
+                                    ImGui.InputText("", ref thing, 5000, ImGuiInputTextFlags.ReadOnly);
+                                    ImGui.PopID();
+                                    ImGui.SameLine();
+                                }
+                                ImGui.PushID(9);
+                                ImGui.PushFont(ImGui.GetIO().FontDefault);
+                                if (ImGui.Button(IconFonts.FontAwesome6.Upload, new Vector2(24, ImGui.GetItemRectSize().Y)))
+                                {
+                                    RunOnAssetSelected = () => { if (AssetSelected.Type == AssetType.AUDIO) audio.AudioPath = AssetSelected.Path; };
+                                    AssetSelFilter = "all";
+                                    Console.WriteLine("SELECTING AD");
+                                    AssetSelectionWindow = true;
+                                }
+                                ImGui.PopFont();
+                                ImGui.PushFont(Fonts["MontserratSB16p"]);
+                                ImGui.PopID();
+                                ImGui.TextWrapped("Volume: ");
+                                ImGui.SameLine();
+
+                                ImGui.InputFloat("", ref vol);
+                                audio.Volume = vol;
+
+                                ImGui.TextWrapped("Try Playback: ");
+                                ImGui.SameLine();
+
+                                ImGui.PushFont(ImGui.GetIO().FontDefault);
+
+                                if (ImGui.Button(IconFonts.FontAwesome6.Play, new Vector2(20, 20)))
+                                {
+                                    audio.Play();
+                                }
+                                ImGui.SameLine();
+                                if (ImGui.Button(IconFonts.FontAwesome6.Pause, new Vector2(20, 20)))
+                                {
+                                    audio.Pause();
+                                }
+                                ImGui.SameLine();
+                                if (ImGui.Button(IconFonts.FontAwesome6.Stop, new Vector2(20, 20)))
+                                {
+                                    audio.Stop();
+                                }
+
+                                ImGui.PopFont();
+                                ImGui.PushFont(Fonts["MontserratSB16p"]);
                             }
                         }
 
@@ -584,6 +671,11 @@ namespace Canvastry.Editor
                                 if (ImGui.Button("Script Behaviour"))
                                 {
                                     tyComponentSelection = typeof(ScriptBehaviourComponent);
+                                }
+
+                                if (ImGui.Button("Audio Source"))
+                                {
+                                    tyComponentSelection = typeof(AudioSourceComponent);
                                 }
                                 ImGui.PopItemWidth();
                                 ImGui.EndListBox();
@@ -677,7 +769,32 @@ namespace Canvastry.Editor
                                         string assetPath = AssetManager.LoadedAssets.Keys.ElementAt(assetIndex);
                                         ImGui.PushFont(Fonts["MontserratSB16p"]);
                                         ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(31, 31, 31, 0));
-                                        rlImGui.ImageButtonSize("", FileIconImage, new Vector2(128, 128));
+                                        if (rlImGui.ImageButtonSize("", FileIconImage, new Vector2(128, 128)))
+                                        {
+                                            SelAssetBrowser = AssetManager.GetLoadedAsset(assetPath);
+                                        }
+
+                                        if(ImGui.IsItemHovered() && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                                        {
+                                            Console.WriteLine("Loading VSCode...");
+
+                                            ProcessStartInfo info = new ProcessStartInfo("code");
+                                            info.CreateNoWindow = true;
+                                            info.Arguments = "\"" +assetPath+ "\"";
+                                            info.UseShellExecute = true;
+                                            Process.Start(info);
+                                        }
+
+                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Middle))
+                                        {
+                                            SelAssetBrowser = AssetManager.GetLoadedAsset(assetPath);
+                                            if (SelAssetBrowser.Type == AssetType.CODE)
+                                            {
+                                                SelAssetText = (SelAssetBrowser.Data as CodeAssetRef).Code;
+                                            }
+                                            ShowAssetTextViewer = true;
+                                        }
+
                                         ImGui.Separator();
                                         ImGui.TextWrapped(Path.GetFileName(assetPath));
                                         ImGui.PopStyleColor();
@@ -796,6 +913,23 @@ namespace Canvastry.Editor
                     }
 
                 if (ProjectFile.LoadedProject != null)
+                    for (int m = 0; m < AssetManager.LoadedAssetCount; m++)
+                    {
+                        var asset = AssetManager.LoadedAssets.Values.ToImmutableList()[m];
+                        if (asset.Type == AssetType.CODE)
+                        {
+                            var code = (CodeAssetRef)asset.Data;
+                            var currentData = File.ReadAllText(asset.Path);
+
+                            if (code.Code != currentData)
+                            {
+                                Console.WriteLine("Updating File " + asset.Path);
+                                (AssetManager.LoadedAssets[asset.Path].Data as CodeAssetRef).Code = currentData;
+                            }
+                        }
+                    }
+
+                if (ProjectFile.LoadedProject != null)
                 {
                     if (AssetManager.LoadedAssets.Keys.Any(e => !File.Exists(e)))
                     {
@@ -885,14 +1019,13 @@ namespace Canvastry.Editor
 
                         ImGui.End();
                     }
-                ImGui.End();
                 if (AssetSelectionWindow)
                     if (ImGui.Begin("Select an Asset", ImGuiWindowFlags.AlwaysAutoResize))
                     {
                         ImGui.TextWrapped("Select an Existing Asset");
                         if (ImGui.BeginListBox(""))
                         {
-                            foreach(var asset in AssetManager.LoadedAssets)
+                            foreach (var asset in AssetManager.LoadedAssets)
                             {
                                 if (Path.GetExtension(asset.Value.Path) == AssetSelFilter || AssetSelFilter == "all")
                                 {
@@ -906,12 +1039,12 @@ namespace Canvastry.Editor
                             }
                             ImGui.EndListBox();
                         }
-                        if(AssetSelected != null)
-                            ImGui.TextWrapped("Selected: "+Path.GetFileName(AssetSelected.Path));
+                        if (AssetSelected != null)
+                            ImGui.TextWrapped("Selected: " + Path.GetFileName(AssetSelected.Path));
 
-                        if(ImGui.Button("Select"))
+                        if (ImGui.Button("Select"))
                         {
-                            if(RunOnAssetSelected != null)
+                            if (RunOnAssetSelected != null)
                                 RunOnAssetSelected();
                             AssetSelectionWindow = false;
                         }
@@ -924,10 +1057,8 @@ namespace Canvastry.Editor
                         ImGui.End();
                     }
 
-                if (RunEveryFrame != null)
-                    RunEveryFrame();
-
                 #endregion
+                
 
                 ImGui.PopFont();
             }
@@ -937,6 +1068,9 @@ namespace Canvastry.Editor
             }
             //System.Threading.Thread.Sleep(16);
             igFrames++;
+
+            if (RunEveryFrame != null)
+                RunEveryFrame();
         }
 
         public void OnRaylibInitialized(EventData data)

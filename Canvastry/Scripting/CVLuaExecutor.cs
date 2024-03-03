@@ -45,6 +45,7 @@ namespace Canvastry.Scripting
                 script.Globals["SpriteComponent"] = typeof(SpriteComponent);
                 script.Globals["RectangleEntity"] = typeof(RectangleEntity);
                 script.Globals["BoxColliderComponent"] = typeof(BoxColliderComponent);
+                script.Globals["AudioSourceComponent"] = typeof(AudioSourceComponent);
                 script.Globals["Rect"] = typeof(Rectangle);
                 script.Globals["BoxCollision"] = typeof(BoxCollision);
                 script.Globals["Key"] = inKey;

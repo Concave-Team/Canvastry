@@ -3,6 +3,7 @@ using Canvastry.ECS.Components;
 using Canvastry.Internals.Assets;
 using Canvastry.Internals.Events;
 using Canvastry.Scripting;
+using CSCore.CoreAudioAPI;
 using ImGuiNET;
 using MoonSharp.Interpreter;
 using Raylib_cs;
@@ -70,9 +71,12 @@ namespace Canvastry.Internals.App
                     if (e.HasComponent<ScriptBehaviourComponent>())
                     {
                         var sCmp = e.GetComponent<ScriptBehaviourComponent>();
-
-                        sCmp._Script = CVLuaExecutor.CreateScript(((CodeAssetRef)sCmp.ScriptData.Data).Code);
-                        e.Init();
+                        if (sCmp.ScriptPath != null)
+                        {
+                            sCmp.ScriptData = AssetManager.GetLoadedAsset(sCmp.ScriptPath);
+                            sCmp._Script = CVLuaExecutor.CreateScript(((CodeAssetRef)sCmp.ScriptData.Data).Code);
+                            e.Init();
+                        }
                     }
                 }
 
@@ -167,6 +171,10 @@ namespace Canvastry.Internals.App
             PhysicsTimer.Stop();
             if (!StandaloneRun)
                 rlImGui.Shutdown();
+
+            for(int i = 0; i < AssetManager.LoadedAssets.Count; i++)
+                AssetManager.UnloadAsset(AssetManager.LoadedAssets.Keys.ToList()[i]);
+
             Raylib.CloseWindow();
         }
 
@@ -174,6 +182,17 @@ namespace Canvastry.Internals.App
         {
             Console.WriteLine("Canvastry v0.01 -- Starting Application -- ######");
             Console.WriteLine("Window Title: " + Settings.WindowTitle);
+
+            using (var mmdeviceEnumerator = new MMDeviceEnumerator())
+            {
+                using (
+                    var mmdeviceCollection = mmdeviceEnumerator.EnumAudioEndpoints(DataFlow.Render, DeviceState.Active))
+                {
+                    SharedData.CurrentAudioDevice = mmdeviceCollection[0];
+
+                    Console.WriteLine("[ENGINE][AUDIO]: Using Audio Device " + SharedData.CurrentAudioDevice.FriendlyName);
+                }
+            }
         }
 
         public Application()

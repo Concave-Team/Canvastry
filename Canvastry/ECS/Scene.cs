@@ -112,6 +112,7 @@ namespace Canvastry.ECS
             var settings = new JsonSerializerSettings
             {
                 TypeNameHandling = TypeNameHandling.Auto,
+                ObjectCreationHandling = ObjectCreationHandling.Reuse
             };
             Scene? scene = JsonConvert.DeserializeObject<Scene>(File.ReadAllText(path),settings);
 
