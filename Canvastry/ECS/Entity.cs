@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Canvastry.Scripting;
 using Canvastry.Internals.Assets;
+using System.Runtime.CompilerServices;
 
 namespace Canvastry.ECS
 {
@@ -16,10 +17,11 @@ namespace Canvastry.ECS
     [Serializable]
     public class Entity
     {
-        public ulong id { get; internal set; } // Effectively allows for up to 18,446,744,073,709,551,615 entities, which I think is enough(probably).
+        public ulong id { get; internal set; } = 0; // Effectively allows for up to 18,446,744,073,709,551,615 entities, which I think is enough(probably).
 
         public string Name;
         public string Tag;
+        public string TypeName;
         public Entity Parent;
         [JsonIgnore]
         public Scene scene;
@@ -36,7 +38,8 @@ namespace Canvastry.ECS
 
                     script.Globals["GameObject"] = this;
 
-                    script.Call(script.Globals["Update"], Raylib_cs.Raylib.GetFrameTime());
+                    if(script.Globals["Update"] != null)
+                        script.Call(script.Globals["Update"], Raylib_cs.Raylib.GetFrameTime());
                 }
             }    
         }
@@ -79,16 +82,16 @@ namespace Canvastry.ECS
                                         colliderA.IsColliding = true;
 
                                         Raylib.DrawRectangleRec(Raylib.GetCollisionRec(new Rectangle(colliderA.Position, colliderA.Size), new Rectangle(colliderB.Position, colliderB.Size)), Color.Red);
-
-                                        script.Call(script.Globals["OnCollisionEnter"], new BoxCollision(entity, colliderB, Raylib.GetCollisionRec(new Rectangle(colliderA.Position, colliderA.Size), new Rectangle(colliderB.Position, colliderB.Size))));
+                                        if (script.Globals["OnCollisionEnter"] != null)
+                                            script.Call(script.Globals["OnCollisionEnter"], new BoxCollision(entity, colliderB, Raylib.GetCollisionRec(new Rectangle(colliderA.Position, colliderA.Size), new Rectangle(colliderB.Position, colliderB.Size))));
                                     }
                                     else
                                     {
                                         if (colliderA.IsColliding == true)
                                         {
                                             colliderA.IsColliding = false;
-
-                                            script.Call(script.Globals["OnCollisionExited"]);
+                                            if (script.Globals["OnCollisionExited"] != null)
+                                                script.Call(script.Globals["OnCollisionExited"]);
                                         }
                                     }
                                 }
@@ -109,8 +112,8 @@ namespace Canvastry.ECS
                     var script = scriptComp._Script;
 
                     script.Globals["GameObject"] = this;
-
-                    script.Call(script.Globals["Start"]);
+                    if (script.Globals["Start"] != null)
+                        script.Call(script.Globals["Start"]);
                 }
                 else
                 {
@@ -120,7 +123,8 @@ namespace Canvastry.ECS
 
                     script.Globals["GameObject"] = this;
 
-                    script.Call(script.Globals["Start"]);
+                    if (script.Globals["Start"] != null)
+                        script.Call(script.Globals["Start"]);
                 }
             }
         }
@@ -142,6 +146,11 @@ namespace Canvastry.ECS
             return Components.Any(cmp => cmp.GetType() == typeof(T));
         }
 
+        public bool HasComponent(string type)
+        {
+            return Components.Any(cmp => cmp.GetType().Name == type);
+        }
+
         public T? GetComponent<T>() where T : Component
         {
             return Components.Find(cmp => cmp.GetType() == typeof(T)) as T;
@@ -152,7 +161,7 @@ namespace Canvastry.ECS
             return Components.Find(cmp => cmp.GetType().Name == type);
         }
 
-        public bool RemoveComponent<T>(T component) where T : Component
+        public bool RemoveComponent<T>() where T : Component
         {
             if (HasComponent<T>())
             {
@@ -161,6 +170,27 @@ namespace Canvastry.ECS
             }
 
             return false;
+        }
+
+        public bool RemoveComponent(string component)
+        {
+            if (HasComponent(component))
+            {
+                Components.Remove(Components.Find(e => e.GetType().Name == component)!);
+                return true;
+            }
+
+            return false;
+        }
+
+        public Entity Clone()
+        {
+            Console.WriteLine("EEE");
+            var clone = (Entity)this.MemberwiseClone();
+
+            Scene.LoadedScene.AddEntity(clone);
+
+            return clone;
         }
 
         public Entity() 

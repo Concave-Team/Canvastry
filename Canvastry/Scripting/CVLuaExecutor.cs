@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Canvastry.ECS;
 using Canvastry.ECS.Components;
 using Canvastry.ECS.Entities;
 using Canvastry.InputLib;
@@ -15,6 +16,12 @@ namespace Canvastry.Scripting
 {
     public static class CVLuaExecutor
     {
+        public static List<string> ExtensiveAssemblies = new List<string>();
+
+        public static void LoadCSExtension(string assemblyPath)
+        {
+
+        }
 
         public static Script CreateScript(string code)
         {
@@ -44,6 +51,8 @@ namespace Canvastry.Scripting
                 script.Globals["TransformComponent"] = typeof(TransformComponent);
                 script.Globals["SpriteComponent"] = typeof(SpriteComponent);
                 script.Globals["RectangleEntity"] = typeof(RectangleEntity);
+                script.Globals["CameraEntity"] = typeof(CameraEntity);
+                script.Globals["Entity"] = typeof(Entity);
                 script.Globals["BoxColliderComponent"] = typeof(BoxColliderComponent);
                 script.Globals["AudioSourceComponent"] = typeof(AudioSourceComponent);
                 script.Globals["Rect"] = typeof(Rectangle);
@@ -52,6 +61,7 @@ namespace Canvastry.Scripting
                 script.Globals["MouseButton"] = msButton;
                 script.Globals["Vector2"] = typeof(Vector2);
                 script.Globals["Color"] = colors;
+                script.Globals["getfenv"] = () => { return script.Globals; };
 
 
                 var result = script.DoString(code);

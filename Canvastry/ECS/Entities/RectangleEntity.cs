@@ -45,7 +45,7 @@ namespace Canvastry.ECS.Entities
 
         public RectangleEntity() : base()
         {
-
+            
         }
     }
 }

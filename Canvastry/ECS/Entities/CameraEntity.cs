@@ -1,4 +1,5 @@
 ﻿using Canvastry.ECS.Components;
+using MoonSharp.Interpreter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 namespace Canvastry.ECS.Entities
 {
     [Serializable]
+    [MoonSharpUserData]
     public class CameraEntity : Entity
     {
         public override void Init()

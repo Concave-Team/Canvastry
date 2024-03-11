@@ -9,6 +9,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using EventHandler = Canvastry.Internals.Events.EventHandler;
+using System.Xml.Linq;
 
 namespace Canvastry.ECS
 {
@@ -66,11 +67,38 @@ namespace Canvastry.ECS
             createdEntt.id = (ulong)SceneEntities.Count + 1;
             createdEntt.Name = name;
             createdEntt.Parent = parent;
+            createdEntt.TypeName = typeof(T).Name;
             SceneEntities.Add(createdEntt);
 
             EventHandler.Invoke<EntityCreatedEvent>(new EntityEventData(this, createdEntt, this));
 
             return createdEntt;
+        }
+
+        public Entity Instance(string type)
+        {
+            Entity createdEntt = (Entity)Activator.CreateInstance(null, type).Unwrap()!;
+
+            createdEntt.scene = this;
+            createdEntt.id = (ulong)SceneEntities.Count + 1;
+            createdEntt.Name = "Untitled";
+            createdEntt.Parent = null;
+            createdEntt.TypeName = type;
+
+            SceneEntities.Add(createdEntt);
+
+            EventHandler.Invoke<EntityCreatedEvent>(new EntityEventData(this, createdEntt, this));
+
+            return createdEntt;
+        }
+
+        public void AddEntity(Entity et)
+        {
+            et.id = (ulong)SceneEntities.Count + 1;
+
+            SceneEntities.Add(et);
+
+            EventHandler.Invoke<EntityCreatedEvent>(new EntityEventData(this, et, this));
         }
 
         public void DestroyEntity(Entity e)
@@ -116,8 +144,11 @@ namespace Canvastry.ECS
             };
             Scene? scene = JsonConvert.DeserializeObject<Scene>(File.ReadAllText(path),settings);
 
-            foreach(var e in scene.SceneEntities)
+            foreach (var e in scene.SceneEntities)
+            {
                 e.scene = scene;
+                e.TypeName = e.GetType().Name;
+            }
 
             LoadedScene = scene;
 

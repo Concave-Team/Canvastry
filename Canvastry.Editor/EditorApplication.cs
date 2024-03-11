@@ -46,7 +46,7 @@ namespace Canvastry.Editor
 
         float vol = 0.5f;
         public ImGuiStyle _propStyle;
-        public Vector4 matCompColor = new Vector4(0, 0, 0, 255);
+        public Vector4 matCompColor = new Vector4(0, 0, 0, 1);
 
         public bool EditorJustOpened = true;
         public int ProjSelIndex = 0;
@@ -97,14 +97,17 @@ namespace Canvastry.Editor
         public string SelAssetText;
 
         public bool ShowAssetTextViewer = false;
+        int rT = 0;
+        public bool PopupBlock = false;
+        Entity entity;
 
-        void DisplayEntityTree(Entity entity)
+        void DisplayEntityTree(Entity _entity)
         {
-            ImGui.PushID((int)entity.id);
+            entity = _entity;
+            //ImGui.PushID((int)entity.id);
             bool open = ImGui.TreeNodeEx(entity.Name);
             if (ImGui.IsItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
             {
-                Console.WriteLine(entity.Name);
                 explorerSelEntity = entity;
                 if (entity.HasComponent<BoxColliderComponent>())
                 {
@@ -113,19 +116,20 @@ namespace Canvastry.Editor
                 pEntityName = entity.Name;
             }
 
+            ImGui.OpenPopupOnItemClick("Menu", ImGuiPopupFlags.MouseButtonRight);
+
             if (open)
             {
+
                 foreach (var childEntity in Scene.LoadedScene.SceneEntities.Where(e => e.Parent == entity))
                 {
                     DisplayEntityTree(childEntity);
                 }
 
                 ImGui.TreePop();
-
-
             }
 
-            ImGui.PopID();
+            //ImGui.PopID();
         }
 
         public void ConfirmPopupOK(string text, Action onConfirm)
@@ -151,6 +155,8 @@ namespace Canvastry.Editor
         Action RunEveryFrame;
         Action RunOnAssetSelected;
 
+        bool pOpenPP = true;
+
         int igFrames = 0;
         public void DrawImGui()
         {
@@ -158,8 +164,9 @@ namespace Canvastry.Editor
             {
                 ImGui.DockSpaceOverViewport(null, ImGuiDockNodeFlags.PassthruCentralNode);
                 ImGui.StyleColorsDark();
+
                 #region Scene Editor Menu
-                if (ImGui.Begin("SceneEditorMenu", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoMove))
+                if (ImGui.Begin("SceneEditorMenu", ImGuiWindowFlags.NoTitleBar))
                 {
                     if (ImGui.Button(IconFonts.FontAwesome6.Play))
                     {
@@ -188,7 +195,7 @@ namespace Canvastry.Editor
                         ImGui.PopFont();
                         ImGui.PushFont(Fonts["MontserratSB16p"]);
                         ImGui.Separator();
-                        ImGui.InputTextMultiline("", ref SelAssetText, 12000, new Vector2(ImGui.GetWindowSize().X-14, 350), ImGuiInputTextFlags.ReadOnly);
+                        ImGui.InputTextMultiline("", ref SelAssetText, 12000, new Vector2(ImGui.GetWindowSize().X - 14, 350), ImGuiInputTextFlags.ReadOnly);
                         ImGui.Separator();
                         if (ImGui.Button("Exit"))
                             ShowAssetTextViewer = false;
@@ -358,7 +365,7 @@ namespace Canvastry.Editor
                             {
                                 OpenInputModal = true;
                                 InputModalText = "Enter Your Scene Name:";
-                                WaitOnSceneCreation = true;
+                                WaitOnSceneCreation = false;
                             }
                         }
                         if (ImGui.MenuItem("Create New Project"))
@@ -390,6 +397,18 @@ namespace Canvastry.Editor
                             ImGui.EndMenu();
                         }
                     }
+
+                    if(ProjectFile.LoadedProject != null)
+                    {
+                        if (ImGui.BeginMenu("Project"))
+                        {
+                            if (ImGui.MenuItem("Change Main Scene"))
+                            {
+                                SelectMainScene = true;
+                            }
+                            ImGui.EndMenu();
+                        }
+                    }
                     ImGui.EndMainMenuBar();
                 }
                 #endregion
@@ -407,13 +426,34 @@ namespace Canvastry.Editor
                                 pEntityName = Scene.LoadedScene.SceneName;
                             }
 
-                            foreach (var entity in Scene.LoadedScene.SceneEntities.Where(e => e.Parent == null))
+                            rT = 0;
+
+                            foreach (var entity in Scene.LoadedScene.SceneEntities.Where(e => e.Parent == null && e != null))
                             {
                                 DisplayEntityTree(entity);
+                            }
+
+                            if (ImGui.BeginPopupModal("Menu"))
+                            {
+                                rT++;
+                                if (ImGui.MenuItem("New Child"))
+                                {
+                                    explorerSelEntity = entity;
+                                    ShowEntityCreationWindow = true;
+                                }
+                                if (ImGui.MenuItem("Remove"))
+                                {
+                                    entity.scene.DestroyEntity(entity);
+                                }
+
+                                ImGui.EndPopup();
                             }
                             ImGui.TreePop();
                         }
                     }
+
+
+
                     ImGui.PopFont();
                     ImGui.End();
                 }
@@ -521,8 +561,10 @@ namespace Canvastry.Editor
                         ImGui.Separator();
                         var sepSize = ImGui.CalcItemWidth();
 
-                        foreach (var component in explorerSelEntity.Components)
+
+                        for (int x = 0; x < explorerSelEntity.Components.Count; x++)
                         {
+                            var component = explorerSelEntity.Components[x];
                             if (component is TransformComponent)
                             {
                                 var transform = (TransformComponent)component;
@@ -588,6 +630,25 @@ namespace Canvastry.Editor
                                     AssetSelFilter = ".lua";
                                     AssetSelectionWindow = true;
                                 }
+
+                                if (scriptC.ScriptPath != null)
+                                {
+                                    ImGui.SameLine();
+                                    if (ImGui.Button(IconFonts.FontAwesome6.TrashCan, new Vector2(24, ImGui.GetItemRectSize().Y)))
+                                    {
+                                        scriptC.ScriptPath = null;
+                                        scriptC._Script = null;
+                                    }
+                                }
+                                ImGui.NewLine();
+                                if (ImGui.Button(IconFonts.FontAwesome6.TrashCan, new Vector2(24, ImGui.GetItemRectSize().Y)))
+                                {
+                                    if (!explorerSelEntity.RemoveComponent<ScriptBehaviourComponent>())
+                                    {
+                                        Console.WriteLine("Could not remove component.");
+                                    }
+                                }
+
                                 ImGui.PopFont();
                                 ImGui.PushFont(Fonts["MontserratSB16p"]);
                             }
@@ -643,6 +704,11 @@ namespace Canvastry.Editor
                                 if (ImGui.Button(IconFonts.FontAwesome6.Stop, new Vector2(20, 20)))
                                 {
                                     audio.Stop();
+                                }
+                                ImGui.NewLine();
+                                if (ImGui.Button(IconFonts.FontAwesome6.TrashCan, new Vector2(24, ImGui.GetItemRectSize().Y)))
+                                {
+                                    explorerSelEntity.RemoveComponent<AudioSourceComponent>();
                                 }
 
                                 ImGui.PopFont();
@@ -774,13 +840,13 @@ namespace Canvastry.Editor
                                             SelAssetBrowser = AssetManager.GetLoadedAsset(assetPath);
                                         }
 
-                                        if(ImGui.IsItemHovered() && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                                        if (ImGui.IsItemHovered() && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
                                         {
                                             Console.WriteLine("Loading VSCode...");
 
                                             ProcessStartInfo info = new ProcessStartInfo("code");
                                             info.CreateNoWindow = true;
-                                            info.Arguments = "\"" +assetPath+ "\"";
+                                            info.Arguments = "\"" + assetPath + "\"";
                                             info.UseShellExecute = true;
                                             Process.Start(info);
                                         }
@@ -967,6 +1033,8 @@ namespace Canvastry.Editor
                         ImGui.End();
                     }
 
+
+
                 if (ShSceneOpen)
                     if (ImGui.Begin("Enter Scene Path", ImGuiWindowFlags.NoTitleBar))
                     {
@@ -1001,7 +1069,17 @@ namespace Canvastry.Editor
                 if (SelectMainScene)
                     if (ImGui.Begin("Select the Main Scene"))
                     {
-                        ImGui.TextWrapped("Your project has no main scene file! Select one so you can continue.");
+                        ImGui.TextWrapped("Select a main project scene file.");
+
+                        if (ImGui.Button("Create New Scene"))
+                        {
+                            if (ProjectFile.LoadedProject != null)
+                            {
+                                OpenInputModal = true;
+                                InputModalText = "Enter Your Scene Name:";
+                                WaitOnSceneCreation = false;
+                            }
+                        }
 
                         if (ImGui.ListBox("", ref MainSceneIdx, ProjectFile.LoadedProject.SceneFiles.ToArray(), ProjectFile.LoadedProject.SceneFiles.Count))
                         {
@@ -1058,7 +1136,7 @@ namespace Canvastry.Editor
                     }
 
                 #endregion
-                
+
 
                 ImGui.PopFont();
             }
@@ -1256,7 +1334,7 @@ namespace Canvastry.Editor
 
         public void OnAppLoop()
         {
-            if (selectedEntity != null)
+            if (selectedEntity != null && Scene.LoadedScene.SceneEntities.Contains(selectedEntity))
             {
                 var boxCollider = selectedEntity.GetComponent<BoxColliderComponent>();
                 Raylib.DrawRectangleLinesEx(new Rectangle(boxCollider.Position, boxCollider.Size), 2, Color.Orange);
@@ -1330,9 +1408,15 @@ namespace Canvastry.Editor
 
             if (ProjectFile.LoadedProject != null)
             {
+                if (Interaction.MsgBox("Do you want to save these changes?", "Save Changes", MsgBoxStyle.YesNo) == MsgBoxResult.Yes)
+                {
+                    if (Scene.LoadedScene != null)
+                    {
+                        Scene.LoadedScene.SaveToFile(Path.Combine(ProjectFile.LoadedProject.Path, "Scenes", Scene.LoadedScene.SceneName + ".json"));
+                    }
+                    
+                }
                 ProjectFile.LoadedProject.SaveToFile(Path.Combine(ProjectFile.LoadedProject.Path, ProjectFile.LoadedProject.ProjectName + ".json"));
-                //Interaction.MsgBox("Your Project was autosaved!", "Info");
-
             }
             File.WriteAllText("editor-settings.json", JsonConvert.SerializeObject(editorData, Formatting.Indented));
 

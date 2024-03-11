@@ -89,6 +89,10 @@ namespace Canvastry.Internals.App
                     AssetManager.LazyLoadAssets();
                     EventHandler.PollEvents();
 
+                    // Delete flagged entities
+                    if (Scene.LoadedScene != null)
+                        Scene.LoadedScene.DeleteEntities();
+
                     if (Rendertexture.CurrentRTx != null)
                         Raylib.BeginTextureMode(Rendertexture.CurrentRTx.rTexture);
                     Raylib.ClearBackground(Settings.WindowClearColor);
@@ -103,8 +107,9 @@ namespace Canvastry.Internals.App
                     {
 
                         // UPDATE ENTITIES:
-                        foreach (var entity in Scene.LoadedScene.SceneEntities)
+                        for(int l = 0; l < Scene.LoadedScene.SceneEntities.Count; l++)
                         {
+                            var entity = Scene.LoadedScene.SceneEntities[l];
                             entity.Update();
                         }
 
@@ -152,10 +157,6 @@ namespace Canvastry.Internals.App
                     }
 
                     Raylib.EndDrawing();
-
-                    // Delete flagged entities at the end of the frame.
-                    if (Scene.LoadedScene != null)
-                        Scene.LoadedScene.DeleteEntities();
                 }
                 catch (ScriptRuntimeException ex)
                 {
